@@ -1,0 +1,14 @@
+{
+  "ticket_id": "SAMPLE-01",
+  "relevant_transaction_id": "TXN-9101",
+  "evidence_verdict": "consistent",
+  "case_type": "wrong_transfer",
+  "severity": "high",
+  "department": "dispute_resolution",
+  "agent_summary": "Ticket SAMPLE-01 is classified as wrong_transfer; evidence is consistent with TXN-9101 identified. Route according to the case type and avoid requesting credentials.",
+  "recommended_next_action": "Route transaction TXN-9101 to dispute_resolution for wrong-transfer review.",
+  "customer_reply": "We have noted your concern about transaction TXN-9101. Our dispute team will review the case and contact you through official support channels. Please do not share your PIN or OTP with anyone.",
+  "human_review_required": true,
+  "confidence": 0.95,
+  "reason_codes": ["wrong_transfer", "transaction_match", "amount_match", "type_match", "status_match", "time_match"]
+}

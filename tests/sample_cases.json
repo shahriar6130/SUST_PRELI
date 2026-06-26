@@ -1,0 +1,116 @@
+[
+  {
+    "name": "wrong transfer consistent",
+    "input": {
+      "ticket_id": "SAMPLE-01",
+      "complaint": "I sent 5000 taka to the wrong number today by mistake.",
+      "language": "en",
+      "transaction_history": [
+        {"transaction_id": "TXN-9101", "timestamp": "2026-04-14T14:08:22Z", "type": "transfer", "amount": 5000, "counterparty": "+8801719876543", "status": "completed"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": "TXN-9101", "evidence_verdict": "consistent", "case_type": "wrong_transfer", "department": "dispute_resolution", "severity": "high", "human_review_required": true, "language": "en"}
+  },
+  {
+    "name": "wrong transfer established recipient inconsistent",
+    "input": {
+      "ticket_id": "SAMPLE-02",
+      "complaint": "I sent 5000 by mistake to the wrong person.",
+      "transaction_history": [
+        {"transaction_id": "TXN-1001", "timestamp": "2026-04-10T10:00:00Z", "type": "transfer", "amount": 1000, "counterparty": "+8801711111111", "status": "completed"},
+        {"transaction_id": "TXN-1002", "timestamp": "2026-04-14T11:00:00Z", "type": "transfer", "amount": 5000, "counterparty": "+8801711111111", "status": "completed"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": "TXN-1002", "evidence_verdict": "inconsistent", "case_type": "wrong_transfer", "department": "dispute_resolution", "severity": "medium", "human_review_required": true, "language": "en"}
+  },
+  {
+    "name": "payment failed",
+    "input": {
+      "ticket_id": "SAMPLE-03",
+      "complaint": "My bill payment failed but 1200 taka was deducted.",
+      "transaction_history": [
+        {"transaction_id": "TXN-2001", "timestamp": "2026-04-14T09:00:00Z", "type": "payment", "amount": 1200, "counterparty": "MERCHANT-9", "status": "failed"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": "TXN-2001", "evidence_verdict": "consistent", "case_type": "payment_failed", "department": "payments_ops", "severity": "high", "human_review_required": false, "language": "en"}
+  },
+  {
+    "name": "refund change of mind",
+    "input": {
+      "ticket_id": "SAMPLE-04",
+      "complaint": "I changed my mind after merchant payment of 700 taka, please refund.",
+      "transaction_history": [
+        {"transaction_id": "TXN-3001", "timestamp": "2026-04-14T09:00:00Z", "type": "payment", "amount": 700, "counterparty": "MERCHANT-4", "status": "completed"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": "TXN-3001", "evidence_verdict": "consistent", "case_type": "refund_request", "department": "customer_support", "severity": "low", "human_review_required": false, "language": "en"}
+  },
+  {
+    "name": "phishing empty history",
+    "input": {
+      "ticket_id": "SAMPLE-05",
+      "complaint": "Someone called from bKash and asked for my OTP and PIN or my account will be blocked.",
+      "transaction_history": []
+    },
+    "expected": {"relevant_transaction_id": null, "evidence_verdict": "insufficient_data", "case_type": "phishing_or_social_engineering", "department": "fraud_risk", "severity": "critical", "human_review_required": true, "language": "en"}
+  },
+  {
+    "name": "vague insufficient",
+    "input": {
+      "ticket_id": "SAMPLE-06",
+      "complaint": "Something wrong with my money please check.",
+      "transaction_history": []
+    },
+    "expected": {"relevant_transaction_id": null, "evidence_verdict": "insufficient_data", "case_type": "other", "department": "customer_support", "severity": "low", "human_review_required": false, "language": "en"}
+  },
+  {
+    "name": "bangla agent cash in",
+    "input": {
+      "ticket_id": "SAMPLE-07",
+      "complaint": "আমি এজেন্ট থেকে ২০০০ টাকা ক্যাশ ইন করেছি কিন্তু টাকা আসেনি।",
+      "language": "bn",
+      "transaction_history": [
+        {"transaction_id": "TXN-4001", "timestamp": "2026-04-14T08:00:00Z", "type": "cash_in", "amount": 2000, "counterparty": "AGENT-55", "status": "pending"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": "TXN-4001", "evidence_verdict": "consistent", "case_type": "agent_cash_in_issue", "department": "agent_operations", "severity": "high", "human_review_required": true, "language": "bn"}
+  },
+  {
+    "name": "ambiguous transfer",
+    "input": {
+      "ticket_id": "SAMPLE-08",
+      "complaint": "I sent 1000 taka and they did not receive it.",
+      "transaction_history": [
+        {"transaction_id": "TXN-5001", "timestamp": "2026-04-14T08:00:00Z", "type": "transfer", "amount": 1000, "counterparty": "+8801700000001", "status": "completed"},
+        {"transaction_id": "TXN-5002", "timestamp": "2026-04-14T09:00:00Z", "type": "transfer", "amount": 1000, "counterparty": "+8801700000002", "status": "completed"},
+        {"transaction_id": "TXN-5003", "timestamp": "2026-04-14T10:00:00Z", "type": "transfer", "amount": 1000, "counterparty": "+8801700000003", "status": "completed"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": null, "evidence_verdict": "insufficient_data", "case_type": "wrong_transfer", "department": "dispute_resolution", "severity": "medium", "human_review_required": false, "language": "en"}
+  },
+  {
+    "name": "merchant settlement",
+    "input": {
+      "ticket_id": "SAMPLE-09",
+      "complaint": "My merchant settlement payout has not arrived.",
+      "user_type": "merchant",
+      "channel": "merchant_portal",
+      "transaction_history": [
+        {"transaction_id": "SET-6001", "timestamp": "2026-04-14T19:00:00Z", "type": "settlement", "amount": 18000, "counterparty": "MERCHANT-88", "status": "pending"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": "SET-6001", "evidence_verdict": "consistent", "case_type": "merchant_settlement_delay", "department": "merchant_operations", "severity": "medium", "human_review_required": false, "language": "en"}
+  },
+  {
+    "name": "duplicate payment second id",
+    "input": {
+      "ticket_id": "SAMPLE-10",
+      "complaint": "I paid once but it was deducted twice.",
+      "transaction_history": [
+        {"transaction_id": "TXN-7001", "timestamp": "2026-04-14T12:00:00Z", "type": "payment", "amount": 1500, "counterparty": "MERCHANT-11", "status": "completed"},
+        {"transaction_id": "TXN-7002", "timestamp": "2026-04-14T12:01:00Z", "type": "payment", "amount": 1500, "counterparty": "MERCHANT-11", "status": "completed"}
+      ]
+    },
+    "expected": {"relevant_transaction_id": "TXN-7002", "evidence_verdict": "consistent", "case_type": "duplicate_payment", "department": "payments_ops", "severity": "high", "human_review_required": true, "language": "en"}
+  }
+]

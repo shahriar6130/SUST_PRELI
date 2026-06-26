@@ -1,0 +1,9 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.DS_Store
+tests
+samples
+QueueStorm_Build_Prompt.md
