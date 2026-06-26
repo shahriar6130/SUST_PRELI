@@ -53,19 +53,58 @@ def classify_case(complaint: str, transactions: list[Transaction], user_type: Us
     phishing_terms = [
         "otp", "pin", "password", "passcode", "card number", "cvv", "blocked if", "block if",
         "from bkash", "agent called", "company called", "suspicious", "scam", "fraud",
-        "link", "lottery", "prize", "\u0993\u099f\u09bf\u09aa\u09bf", "\u09aa\u09bf\u09a8",
-        "\u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1", "\u09aa\u09be\u09b8\u0993\u09df\u09be\u09b0\u09cd\u09a1",
-        "\u09aa\u09cd\u09b0\u09a4\u09be\u09b0\u0995", "\u09ab\u09cb\u09a8 \u09a6\u09bf\u09af\u09bc\u09c7",
-        "\u09ab\u09cb\u09a8 \u09a6\u09bf\u09df\u09c7", "\u09ac\u09cd\u09b2\u0995", "\u09b2\u09bf\u0982\u0995",
-        "\u09b2\u099f\u09be\u09b0\u09bf", "\u09aa\u09c1\u09b0\u09b8\u09cd\u0995\u09be\u09b0",
+        "link", "lottery", "prize", "ওটিপি", "পিন",
+        "পাসওয়ার্ড", "পাসওয়্যার্ড",
+        "প্রতারক", "ফোন দিয়ে",
+        "ফোন দিয়ে", "ব্লক", "লিংক",
+        "লটারি", "পুরস্কার",
+        # Additional high-risk triggers
+        "account block", "account will be blocked", "account blocked", "account freeze",
+        "verify kyc", "update kyc", "kyc update", "kyc expire",
+        "cashback offer", "cashback link", "refund link", "claim reward",
+        "update sim", "sim update", "re-register",
+        "অ্যাকাউন্ট ব্লক", "কেওয়াইসি", "ক্যাশব্যাক",
+        # Spec §4: "suspicious call/SMS/scam/fraud/link/lottery/prize"
+        "sms", "call from", "call me", "called me",
     ]
     ask_terms = [
-        "ask", "asked", "asking", "share", "tell", "give", "\u099a\u09be\u0987",
-        "\u099a\u09c7\u09df\u09c7\u099b\u09c7", "\u099a\u09c7\u09af\u09bc\u09c7\u099b\u09c7",
-        "\u09a6\u09bf\u09a4\u09c7", "\u09ac\u09b2\u09c7\u099b\u09c7",
+        "ask", "asked", "asking", "share", "tell", "give", "send", "provide",
+        "verify", "confirm", "update", "click", "open",
+        "চাই", "চেয়েছে", "দিতে", "বলেছে", "শেয়ার", "পাঠাও", "ক্লিক", "আপডেট",
     ]
-    high_risk_terms = ["scam", "fraud", "lottery", "prize", "link", "\u09aa\u09cd\u09b0\u09a4\u09be\u09b0\u0995"]
-    if _contains_any(text, phishing_terms) and (_contains_any(text, ask_terms) or _contains_any(text, high_risk_terms)):
+    credential_terms = [
+        "otp", "pin", "password", "passcode", "card number", "cvv",
+        "ওটিপি", "পিন", "পাসওয়ার্ড", "পাসওয়্যার্ড",
+    ]
+    # Spec §4.1 — phishing triggers. Match if ANY of:
+    #   a) credential term + ask term
+    #   b) credential term + high-risk term (block/scam/link/...)
+    #   c) high-risk term alone (e.g. "lottery winner", "click this link")
+    has_credential = any(t in text for t in credential_terms)
+    has_ask = _contains_any(text, ask_terms)
+    high_risk = _contains_any(text, phishing_terms) and not has_credential
+    if has_credential and (has_ask or _contains_any(text, phishing_terms)):
+        return CaseType.phishing_or_social_engineering
+    if high_risk and has_ask:
+        return CaseType.phishing_or_social_engineering
+    # KYC / sim / account-block / cashback / refund-link scams without explicit credential words.
+    if _contains_any(text, ["kyc", "কেওয়াইসি", "sim update", "update sim",
+                            "account block", "account freeze", "cashback offer",
+                            "refund link", "claim reward", "ক্যাশব্যাক", "লিংক"]) \
+            and (has_ask or has_credential):
+        return CaseType.phishing_or_social_engineering
+    # Impersonation ("from bKash/agent/company") combined with a threat ("account will be blocked")
+    # is phishing per spec §4 even without an explicit credential word or ask verb.
+    has_impersonation = any(
+        term in text for term in ["from bkash", "agent called", "company called",
+                                  "from bank", "বিকাশ থেকে"]
+    )
+    has_threat = any(
+        term in text for term in ["account will be blocked", "account blocked",
+                                  "account freeze", "block if", "blocked if",
+                                  "অ্যাকাউন্ট ব্লক"]
+    )
+    if has_impersonation and has_threat:
         return CaseType.phishing_or_social_engineering
 
     duplicate_terms = [

@@ -93,15 +93,28 @@ def infer_time_window(complaint: str, transactions: list[Transaction]) -> tuple[
         return None
     latest = max(timestamps)
     if "yesterday" in text or "\u0997\u09a4\u0995\u09be\u09b2" in text:
-        start = (latest - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        return start, start + timedelta(days=1)
-    if any(word in text for word in ["today", "\u0986\u099c", "this morning", "\u09b8\u0995\u09be\u09b2\u09c7"]):
-        return latest.replace(hour=0, minute=0, second=0, microsecond=0), latest + timedelta(seconds=1)
+        # "Yesterday" = the full 24h before the latest timestamp's day boundary.
+        day_end = latest.replace(hour=23, minute=59, second=59, microsecond=0)
+        day_start = (day_end - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return day_start, day_end
+    if any(word in text for word in ["today", "\u0986\u099c", "this morning",
+                                      "this evening", "this afternoon",
+                                      "\u09b8\u0995\u09be\u09b2\u09c7", "\u09ac\u09bf\u0995\u09c7\u09b2",
+                                      "\u09a6\u09c1\u09aa\u09c1\u09b0", "\u09b8\u09a8\u09cd\u09a7\u09cd\u09af\u09be"]):
+        # "Today" = the 24h ending at the latest timestamp (spec §7.1).
+        return latest - timedelta(hours=24), latest
     hour_match = re.search(r"\b(?:around\s*)?(\d{1,2})\s*(?:pm|p\.m\.)\b", text)
     if hour_match:
         hour = int(hour_match.group(1))
         if hour < 12:
             hour += 12
+        center = latest.replace(hour=hour, minute=0, second=0, microsecond=0)
+        return center - timedelta(hours=2), center + timedelta(hours=2)
+    hour_match_am = re.search(r"\b(?:around\s*)?(\d{1,2})\s*(?:am|a\.m\.)\b", text)
+    if hour_match_am:
+        hour = int(hour_match_am.group(1))
+        if hour == 12:
+            hour = 0
         center = latest.replace(hour=hour, minute=0, second=0, microsecond=0)
         return center - timedelta(hours=2), center + timedelta(hours=2)
     return None
@@ -173,6 +186,32 @@ def _established_counterparty(txn: Transaction, transactions: list[Transaction])
     return count >= 2
 
 
+DEDUCTED_TERMS = {
+    "deducted", "deduct", "cut", "taken", "charged", "money gone", "balance gone",
+    "কেটে", "কেটেছে", "কাটা", "টাকা কাটা", "ব্যালেন্স",
+}
+
+
+def _amount_contradicts(txn: Transaction, complaint_amounts: list[float]) -> bool:
+    """Complaint mentions a specific amount but the matched transaction is for a different amount."""
+    if txn.amount is None or not complaint_amounts:
+        return False
+    return not any(math.isclose(txn.amount, a, abs_tol=0.01) for a in complaint_amounts)
+
+
+def _status_contradicts(txn: Transaction, case_type: CaseType, complaint: str) -> bool:
+    """Return True when the transaction status directly disagrees with the complaint claim."""
+    text = normalize_text(complaint)
+    if txn.status == TransactionStatus.reversed and any(t in text for t in ["deducted", "deduct", "কেটে", "কেটেছে", "কাটা"]):
+        return True
+    if txn.status == TransactionStatus.failed and case_type == CaseType.duplicate_payment and ("two times" in text or "twice" in text or "দুইবার" in text):
+        return True
+    if txn.status == TransactionStatus.completed and case_type == CaseType.payment_failed and any(t in text for t in DEDUCTED_TERMS):
+        # Payment failed claim + completed txn + deducted wording => contradiction
+        return True
+    return False
+
+
 def match_transaction(complaint: str, case_type: CaseType, transactions: list[Transaction]) -> MatchResult:
     amounts = extract_amounts(complaint)
     if case_type == CaseType.phishing_or_social_engineering:
@@ -200,7 +239,16 @@ def match_transaction(complaint: str, case_type: CaseType, transactions: list[Tr
 
     top_score = scored[0][0]
     tied = [item for item in scored if math.isclose(item[0], top_score, abs_tol=0.01)]
-    if len(tied) > 1 and (amounts or top_score <= 6):
+    # Spec §7.3: "Two or more candidates tie on the decisive signal" → null + insufficient_data.
+    # An amount+type+status tie is NOT resolved just because every tied txn happens to have
+    # amount_match — they all share it, so the tie stands. A unique counterparty mentioned by
+    # the customer is the only signal that can disambiguate a near-tie.
+    unique_counterparty_match = bool(counterparties) and any(
+        item[2] and "counterparty_match" in item[2] for item in tied
+    ) and not all(
+        item[2] and "counterparty_match" in item[2] for item in tied
+    )
+    if len(tied) > 1 and not unique_counterparty_match:
         return MatchResult(None, EvidenceVerdict.insufficient_data, amounts[0] if amounts else None, 0.45, [case_type.value, "ambiguous_match"])
 
     txn = scored[0][1]
@@ -209,7 +257,10 @@ def match_transaction(complaint: str, case_type: CaseType, transactions: list[Tr
     if case_type == CaseType.wrong_transfer and _established_counterparty(txn, transactions):
         verdict = EvidenceVerdict.inconsistent
         reasons.append("established_counterparty")
-    if case_type == CaseType.refund_request and txn.status in {TransactionStatus.reversed, TransactionStatus.failed} and "deduct" in normalize_text(complaint):
+    if _amount_contradicts(txn, amounts) and amounts:
+        verdict = EvidenceVerdict.inconsistent
+        reasons.append("amount_contradiction")
+    if _status_contradicts(txn, case_type, complaint):
         verdict = EvidenceVerdict.inconsistent
         reasons.append("status_contradiction")
     return MatchResult(txn.transaction_id, verdict, txn.amount, min(0.95, 0.5 + top_score / 20), reasons)
