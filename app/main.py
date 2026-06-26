@@ -59,7 +59,7 @@ async def analyze_ticket(ticket: AnalyzeTicketRequest):
         return JSONResponse(status_code=422, content={"error": "complaint must not be empty"})
     try:
         result = await analyze(ticket)
-    except Exception:
-        logger.exception("analyze-ticket failed")
+    except Exception as exc:
+        logger.error("analyze-ticket failed: %s", type(exc).__name__)
         return JSONResponse(status_code=500, content={"error": "internal error"})
     return result.model_dump(mode="json")

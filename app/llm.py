@@ -93,7 +93,7 @@ async def maybe_enhance(response: AnalyzeTicketResponse, complaint: str) -> Anal
         logger.warning("llm call failed: %s", exc)
         return response
     except Exception as exc:
-        logger.exception("llm unexpected error: %s", exc)
+        logger.error("llm unexpected error: %s", type(exc).__name__)
         return response
 
     if not rewrite:
