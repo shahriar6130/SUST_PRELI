@@ -1,0 +1,6 @@
+{
+  "name": "QueueStorm Investigator",
+  "description": "AI-powered high-stakes financial investigation and support tool for evaluating tickets, analyzing evidence, and managing customer replies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

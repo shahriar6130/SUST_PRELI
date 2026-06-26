@@ -135,7 +135,8 @@ def classify_case(complaint: str, transactions: list[Transaction], user_type: Us
         return CaseType.merchant_settlement_delay
 
     wrong_terms = [
-        "wrong number", "wrong person", "by mistake", "mistake", "didn't get it", "did not get",
+        "wrong number", "wrong person", "wrong recipient", "wrong account", "incorrect recipient",
+        "by mistake", "mistake", "didn't get it", "did not get",
         "not received", "didn't receive", "did not receive", "sent but",
         "\u09ad\u09c1\u09b2 \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0", "\u09ad\u09c1\u09b2 \u09a8\u09ae\u09cd\u09ac\u09b0",
         "\u09ad\u09c1\u09b2 \u0995\u09b0\u09c7", "\u09aa\u09be\u09af\u09bc\u09a8\u09bf", "\u09aa\u09be\u09df\u09a8\u09bf",

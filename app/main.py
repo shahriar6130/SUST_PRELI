@@ -53,6 +53,11 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/health")
+async def api_health() -> dict[str, str]:
+    return await health()
+
+
 @app.post("/analyze-ticket")
 async def analyze_ticket(ticket: AnalyzeTicketRequest):
     if not ticket.complaint.strip():
@@ -63,3 +68,8 @@ async def analyze_ticket(ticket: AnalyzeTicketRequest):
         logger.error("analyze-ticket failed: %s", type(exc).__name__)
         return JSONResponse(status_code=500, content={"error": "internal error"})
     return result.model_dump(mode="json")
+
+
+@app.post("/api/analyze-ticket")
+async def api_analyze_ticket(ticket: AnalyzeTicketRequest):
+    return await analyze_ticket(ticket)
