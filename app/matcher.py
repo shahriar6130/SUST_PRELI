@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import re
-from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -11,11 +10,14 @@ from app.schemas import CaseType, EvidenceVerdict, Transaction, TransactionStatu
 
 
 WORD_AMOUNTS = {
-    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
-    "ten": 10, "hundred": 100, "thousand": 1000, "lakh": 100000,
-    "এক": 1, "দুই": 2, "তিন": 3, "চার": 4, "পাঁচ": 5, "ছয়": 6, "ছয়": 6, "সাত": 7,
-    "আট": 8, "নয়": 9, "নয়": 9, "দশ": 10, "শত": 100, "হাজার": 1000, "লাখ": 100000,
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+    "eight": 8, "nine": 9, "ten": 10, "hundred": 100, "thousand": 1000, "lakh": 100000,
+    "\u098f\u0995": 1, "\u09a6\u09c1\u0987": 2, "\u09a4\u09bf\u09a8": 3, "\u099a\u09be\u09b0": 4,
+    "\u09aa\u09be\u0981\u099a": 5, "\u099b\u09af\u09bc": 6, "\u099b\u09df": 6, "\u09b8\u09be\u09a4": 7,
+    "\u0986\u099f": 8, "\u09a8\u09af\u09bc": 9, "\u09a8\u09df": 9, "\u09a6\u09b6": 10,
+    "\u09b6\u09a4": 100, "\u09b9\u09be\u099c\u09be\u09b0": 1000, "\u09b2\u09be\u0996": 100000,
 }
+MULTIPLIERS = {"thousand", "hundred", "lakh", "\u09b9\u09be\u099c\u09be\u09b0", "\u09b6\u09a4", "\u09b2\u09be\u0996"}
 
 
 @dataclass
@@ -49,10 +51,10 @@ def extract_amounts(complaint: str) -> list[float]:
     for i, token in enumerate(tokens):
         if token in WORD_AMOUNTS:
             value = WORD_AMOUNTS[token]
-            if i + 1 < len(tokens) and tokens[i + 1] in {"thousand", "hundred", "lakh", "হাজার", "শত", "লাখ"}:
+            if i + 1 < len(tokens) and tokens[i + 1] in MULTIPLIERS:
                 value *= WORD_AMOUNTS[tokens[i + 1]]
                 amounts.append(float(value))
-            elif token not in {"thousand", "hundred", "lakh", "হাজার", "শত", "লাখ"}:
+            elif token not in MULTIPLIERS:
                 amounts.append(float(value))
     deduped: list[float] = []
     for amount in amounts:
@@ -77,9 +79,9 @@ def infer_type(case_type: CaseType, complaint: str) -> TransactionType | None:
         return TransactionType.cash_in
     if case_type == CaseType.merchant_settlement_delay:
         return TransactionType.settlement
-    if any(word in text for word in ["send", "sent", "transfer", "ভুল"]):
+    if any(word in text for word in ["send", "sent", "transfer", "\u09ad\u09c1\u09b2", "\u09aa\u09be\u09a0\u09bf\u09af\u09bc\u09c7\u099b\u09bf"]):
         return TransactionType.transfer
-    if any(word in text for word in ["payment", "bill", "recharge", "pay"]):
+    if any(word in text for word in ["payment", "bill", "recharge", "pay", "\u09aa\u09c7\u09ae\u09c7\u09a8\u09cd\u099f", "\u09ac\u09bf\u09b2"]):
         return TransactionType.payment
     return None
 
@@ -90,10 +92,10 @@ def infer_time_window(complaint: str, transactions: list[Transaction]) -> tuple[
     if not timestamps:
         return None
     latest = max(timestamps)
-    if "yesterday" in text or "গতকাল" in text:
+    if "yesterday" in text or "\u0997\u09a4\u0995\u09be\u09b2" in text:
         start = (latest - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         return start, start + timedelta(days=1)
-    if any(word in text for word in ["today", "আজ", "this morning", "সকালে"]):
+    if any(word in text for word in ["today", "\u0986\u099c", "this morning", "\u09b8\u0995\u09be\u09b2\u09c7"]):
         return latest.replace(hour=0, minute=0, second=0, microsecond=0), latest + timedelta(seconds=1)
     hour_match = re.search(r"\b(?:around\s*)?(\d{1,2})\s*(?:pm|p\.m\.)\b", text)
     if hour_match:

@@ -13,7 +13,7 @@ SEVERITY_LEVEL = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 
 
 def load_cases():
-    return json.loads(Path("tests/sample_cases.json").read_text())
+    return json.loads(Path("tests/sample_cases.json").read_text(encoding="utf-8"))
 
 
 def assert_bangla(text: str):
@@ -91,3 +91,21 @@ def test_phishing_empty_history():
     assert body["case_type"] == "phishing_or_social_engineering"
     assert body["severity"] == "critical"
     assert body["department"] == "fraud_risk"
+
+
+def test_real_unicode_bangla_cash_in():
+    response = client.post(
+        "/analyze-ticket",
+        json={
+            "ticket_id": "BN-1",
+            "complaint": "\u0986\u09ae\u09bf \u098f\u099c\u09c7\u09a8\u09cd\u099f \u09a5\u09c7\u0995\u09c7 \u09e8\u09e6\u09e6\u09e6 \u099f\u09be\u0995\u09be \u0995\u09cd\u09af\u09be\u09b6 \u0987\u09a8 \u0995\u09b0\u09c7\u099b\u09bf \u0995\u09bf\u09a8\u09cd\u09a4\u09c1 \u099f\u09be\u0995\u09be \u0986\u09b8\u09c7\u09a8\u09bf\u0964",
+            "transaction_history": [
+                {"transaction_id": "TXN-BN-1", "timestamp": "2026-04-14T08:00:00Z", "type": "cash_in", "amount": 2000, "counterparty": "AGENT-55", "status": "pending"}
+            ],
+        },
+    )
+    body = response.json()
+    assert response.status_code == 200
+    assert body["case_type"] == "agent_cash_in_issue"
+    assert body["relevant_transaction_id"] == "TXN-BN-1"
+    assert_bangla(body["customer_reply"])

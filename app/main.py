@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import json
-
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
 from app.analyzer import analyze
 from app.schemas import AnalyzeTicketRequest
@@ -25,20 +22,8 @@ async def health() -> dict[str, str]:
 
 
 @app.post("/analyze-ticket")
-async def analyze_ticket(request: Request):
+async def analyze_ticket(ticket: AnalyzeTicketRequest):
     try:
-        try:
-            payload = await request.json()
-        except json.JSONDecodeError:
-            return JSONResponse(status_code=400, content={"error": "invalid JSON"})
-        if not isinstance(payload, dict):
-            return JSONResponse(status_code=400, content={"error": "JSON body must be an object"})
-        if "ticket_id" not in payload or "complaint" not in payload:
-            return JSONResponse(status_code=400, content={"error": "missing required field"})
-        try:
-            ticket = AnalyzeTicketRequest.model_validate(payload)
-        except ValidationError:
-            return JSONResponse(status_code=400, content={"error": "malformed input"})
         if not ticket.complaint.strip():
             return JSONResponse(status_code=422, content={"error": "complaint must not be empty"})
         result = await analyze(ticket)

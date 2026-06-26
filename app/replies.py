@@ -7,20 +7,43 @@ def _txn(txn_id: str | None) -> str:
     return txn_id or "the reported transaction"
 
 
+BN_PIN_OTP_WARNING = "\u0986\u09aa\u09a8\u09be\u09b0 PIN \u09ac\u09be OTP \u0995\u09be\u09b0\u0993 \u09b8\u0999\u09cd\u0997\u09c7 \u09b6\u09c7\u09af\u09bc\u09be\u09b0 \u0995\u09b0\u09ac\u09c7\u09a8 \u09a8\u09be\u0964"
+
+
 def customer_template(case_type: CaseType, verdict: EvidenceVerdict, language: str, txn_id: str | None) -> str:
     if verdict == EvidenceVerdict.insufficient_data and case_type != CaseType.phishing_or_social_engineering:
         if language == "bn":
-            return "ধন্যবাদ। দ্রুত সহায়তার জন্য অনুগ্রহ করে ট্রানজ্যাকশন আইডি, টাকার পরিমাণ এবং কী সমস্যা হয়েছে তা সংক্ষেপে জানান। আপনার PIN বা OTP কারও সঙ্গে শেয়ার করবেন না।"
+            return (
+                "\u09a7\u09a8\u09cd\u09af\u09ac\u09be\u09a6\u0964 \u09a6\u09cd\u09b0\u09c1\u09a4 \u09b8\u09b9\u09be\u09af\u09bc\u09a4\u09be\u09b0 \u099c\u09a8\u09cd\u09af "
+                "\u0985\u09a8\u09c1\u0997\u09cd\u09b0\u09b9 \u0995\u09b0\u09c7 \u099f\u09cd\u09b0\u09be\u09a8\u099c\u09cd\u09af\u09be\u0995\u09b6\u09a8 \u0986\u0987\u09a1\u09bf, "
+                "\u099f\u09be\u0995\u09be\u09b0 \u09aa\u09b0\u09bf\u09ae\u09be\u09a3 \u098f\u09ac\u0982 \u0995\u09c0 \u09b8\u09ae\u09b8\u09cd\u09af\u09be \u09b9\u09af\u09bc\u09c7\u099b\u09c7 "
+                f"\u09a4\u09be \u09b8\u0982\u0995\u09cd\u09b7\u09c7\u09aa\u09c7 \u099c\u09be\u09a8\u09be\u09a8\u0964 {BN_PIN_OTP_WARNING}"
+            )
         return "Thank you for reaching out. To help you faster, please share the transaction ID, the amount, and a short description of what went wrong. Please do not share your PIN or OTP with anyone."
 
     if case_type == CaseType.phishing_or_social_engineering:
         if language == "bn":
-            return "তথ্য শেয়ার করার আগে আমাদের জানানোর জন্য ধন্যবাদ। আমরা কখনও আপনার PIN, OTP বা পাসওয়ার্ড চাই না। কেউ আমাদের পরিচয় দিলেও এগুলো শেয়ার করবেন না। আমাদের fraud team বিষয়টি দেখবে।"
+            return (
+                "\u09a4\u09a5\u09cd\u09af \u09b6\u09c7\u09af\u09bc\u09be\u09b0 \u0995\u09b0\u09be\u09b0 \u0986\u0997\u09c7 \u0986\u09ae\u09be\u09a6\u09c7\u09b0 "
+                "\u099c\u09be\u09a8\u09be\u09a8\u09cb\u09b0 \u099c\u09a8\u09cd\u09af \u09a7\u09a8\u09cd\u09af\u09ac\u09be\u09a6\u0964 "
+                "\u0986\u09ae\u09b0\u09be \u0995\u0996\u09a8\u0993 \u0986\u09aa\u09a8\u09be\u09b0 PIN, OTP \u09ac\u09be "
+                "\u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u099a\u09be\u0987 \u09a8\u09be\u0964 "
+                "\u0995\u09c7\u0989 \u0986\u09ae\u09be\u09a6\u09c7\u09b0 \u09aa\u09b0\u09bf\u099a\u09af\u09bc \u09a6\u09bf\u09b2\u09c7\u0993 "
+                "\u098f\u0997\u09c1\u09b2\u09cb \u09b6\u09c7\u09af\u09bc\u09be\u09b0 \u0995\u09b0\u09ac\u09c7\u09a8 \u09a8\u09be\u0964 "
+                "\u0986\u09ae\u09be\u09a6\u09c7\u09b0 fraud team \u09ac\u09bf\u09b7\u09af\u09bc\u099f\u09bf \u09a6\u09c7\u0996\u09ac\u09c7\u0964"
+            )
         return "Thank you for reaching out before sharing any information. We never ask for your PIN, OTP, or password under any circumstances. Please do not share these with anyone, even if they claim to be from us. Our fraud team has been notified."
 
     if case_type in {CaseType.wrong_transfer, CaseType.agent_cash_in_issue}:
         if language == "bn":
-            return f"ট্রানজ্যাকশন {_txn(txn_id)} নিয়ে আপনার অভিযোগ আমরা নথিভুক্ত করেছি। সংশ্লিষ্ট টিম বিষয়টি যাচাই করে official support channels এর মাধ্যমে যোগাযোগ করবে। আপনার PIN বা OTP কারও সঙ্গে শেয়ার করবেন না।"
+            team = "\u098f\u099c\u09c7\u09a8\u09cd\u099f \u0985\u09aa\u09be\u09b0\u09c7\u09b6\u09a8\u09b8" if case_type == CaseType.agent_cash_in_issue else "\u09a1\u09bf\u09b8\u09aa\u09bf\u0989\u099f \u099f\u09bf\u09ae"
+            return (
+                f"\u099f\u09cd\u09b0\u09be\u09a8\u099c\u09cd\u09af\u09be\u0995\u09b6\u09a8 {_txn(txn_id)} \u09a8\u09bf\u09af\u09bc\u09c7 "
+                "\u0986\u09aa\u09a8\u09be\u09b0 \u0985\u09ad\u09bf\u09af\u09cb\u0997 \u0986\u09ae\u09b0\u09be \u09a8\u09a5\u09bf\u09ad\u09c1\u0995\u09cd\u09a4 "
+                f"\u0995\u09b0\u09c7\u099b\u09bf\u0964 \u09b8\u0982\u09b6\u09cd\u09b2\u09bf\u09b7\u09cd\u099f {team} \u09ac\u09bf\u09b7\u09af\u09bc\u099f\u09bf "
+                "\u09af\u09be\u099a\u09be\u0987 \u0995\u09b0\u09c7 official support channels \u098f\u09b0 \u09ae\u09be\u09a7\u09cd\u09af\u09ae\u09c7 "
+                f"\u09af\u09cb\u0997\u09be\u09af\u09cb\u0997 \u0995\u09b0\u09ac\u09c7\u0964 {BN_PIN_OTP_WARNING}"
+            )
         return f"We have noted your concern about transaction {_txn(txn_id)}. Our dispute team will review the case and contact you through official support channels. Please do not share your PIN or OTP with anyone."
 
     if case_type in {CaseType.payment_failed, CaseType.duplicate_payment}:
