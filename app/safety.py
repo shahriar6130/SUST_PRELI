@@ -18,8 +18,10 @@ REQUEST_CREDENTIAL_LOOSE_RE = re.compile(
 REFUND_PROMISE_RE = re.compile(
     r"\b(we will refund|will be refunded|we have refunded|we have reversed|"
     r"money will be returned|will be recovered|account unblocked|"
-    r"has been processed|has been reversed|reversed your)\b",
-    re.I,
+    r"has been processed|has been reversed|reversed your)\b"
+    r"|(ফেরত\s*দেব|ফেরত\s*দেওয়া\s*হবে|বিপরীত\s*করা\s*হয়েছে|আনব্লক\s*করা\s*হয়েছে|ফেরত\s*পাবেন|"
+    r"টাকা\s*ফেরত|অ্যাকাউন্ট\s*আনব্লক)",
+    re.I | re.U,
 )
 # Third-party referrals and suspicious links / phone numbers.
 THIRD_PARTY_RE = re.compile(
