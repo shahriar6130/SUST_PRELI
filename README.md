@@ -323,7 +323,8 @@ For each transaction, the matcher computes:
 
 | Path                | Status                                                                                                                       |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------|
-| **A. Live URL**     | _To be filled after deploy._ `https://<your-app>.onrender.com` (Render free tier, `USE_LLM=false`, health check on `/health`) |
+| **A. Live URL**     | Live on Render: [`https://sust-preli-dm9d.onrender.com`](https://sust-preli-dm9d.onrender.com) (Render free tier, `USE_LLM=false`, health check on `/health`) |
+| **A.1 Endpoints**   | [`GET /health`](https://sust-preli-dm9d.onrender.com/health) · [`POST /analyze-ticket`](https://sust-preli-dm9d.onrender.com/analyze-ticket) |
 | **B. Docker image** | Optional. `docker build -t queuestorm-investigator . && docker run --rm -p 8000:8000 -e USE_LLM=false queuestorm-investigator` |
 | **C. Runbook**      | [`RUNBOOK.md`](./RUNBOOK.md) — copy-pasteable setup for local or VM deploy.                                                   |
 
